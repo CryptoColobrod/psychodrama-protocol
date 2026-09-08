@@ -406,6 +406,8 @@ Original question: <verbatim user question>
 Canonical Intent: <text from Step 2>
 
 Panel members in this run: <active roster>
+<if PROTAGONIST_POSITION is set, add:>
+Protagonist position: "<PROTAGONIST_POSITION>". Stress-test it explicitly where a thesis touches it.
 
 Theses:
 T0: <text>
@@ -415,7 +417,25 @@ T2: <text>
 Tn: <text>
 ```
 
-(No `model` parameter is passed — role agents inherit the session's model, per Protocol · Model.)
+**Model tier.** Pass no `model` parameter — each agent file declares its tier (Protocol · Model).
+Exception: if `MODEL_OVERRIDE` is set, pass `model="<MODEL_OVERRIDE>"` on every call in this step.
+
+**Skeptic anchoring guard.** If `PROTAGONIST_POSITION` is set, the Skeptic's prompt (and only the
+Skeptic's) gets one more line after the Protagonist line:
+`A Champion is defending the user's stated position. Your job includes preventing the panel from anchoring on it — vote on the theses, not on the Protagonist.`
+
+**Champion dispatch.** If `PROTAGONIST_POSITION` is set, add ONE more call to the same parallel message:
+
+```
+Agent(
+  subagent_type="psychodrama-champion",
+  description="Champion for the Protagonist",
+  prompt="<the same R1 prompt as the roster, including the Protagonist line>"
+)
+```
+
+The Champion's output is stored alongside the roster's R1 votes and passed to the Judge in Step 5
+under the heading `Champion (Protagonist's advocate):`. It is not part of `<active roster>`.
 
 Wait for all roster subagents to return. Each returns:
 - **Block 1:** line-by-line votes `T<n>: <STATUS> [comment]` (comment may contain `CONDITION:`/`FLIP:`/`ANCHOR:`/`[impact: ...]` tags, see Protocol · Status vocabulary).
@@ -483,16 +503,19 @@ no chat back and forth):
 ```
 Agent(
   subagent_type="claude",
-  description="Champion case: <perspective>",  prompt="<Champion mandate from Step 4b>\n\nOriginal question: <verbatim user question>\n\nCanonical Intent: <text from Step 2>\n\nState your strongest case for this perspective. Use ANCHOR: quotes from the question/spec where you ground a claim, and CONDITION: for anything contingent on an external dependency."
+  description="Champion case: <perspective>",  model="sonnet",  prompt="<Champion mandate from Step 4b>\n\nOriginal question: <verbatim user question>\n\nCanonical Intent: <text from Step 2>\n\nState your strongest case for this perspective. Use ANCHOR: quotes from the question/spec where you ground a claim, and CONDITION: for anything contingent on an external dependency."
 )
 ```
 
 ```
 Agent(
   subagent_type="claude",
-  description="Critic fatal-flaw case: <perspective>",  prompt="<Tailored Critic mandate from Step 4b>\n\nOriginal question: <verbatim user question>\n\nCanonical Intent: <text from Step 2>\n\nChampion's case:\n<verbatim Champion output>\n\nState the fatal-flaw case against this perspective. FLIP: (what evidence would vindicate the idea) is MANDATORY. Tag [impact: critical|moderate|minor] on every strike. ANCHOR: quotes required where you ground a claim."
+  description="Critic fatal-flaw case: <perspective>",  model="opus",  prompt="<Tailored Critic mandate from Step 4b>\n\nOriginal question: <verbatim user question>\n\nCanonical Intent: <text from Step 2>\n\nChampion's case:\n<verbatim Champion output>\n\nState the fatal-flaw case against this perspective. FLIP: (what evidence would vindicate the idea) is MANDATORY. Tag [impact: critical|moderate|minor] on every strike. ANCHOR: quotes required where you ground a claim."
 )
 ```
+
+Tier: `sonnet` on the Champion call, `opus` on the Tailored Critic call, per Protocol · Model. If
+`MODEL_OVERRIDE` is set, it replaces both.
 
 One exchange each — Champion states its case once, Critic answers once. No multi-round chat (Protocol
 · Rounds & stop conditions — the same hard-cap philosophy applies to duels).

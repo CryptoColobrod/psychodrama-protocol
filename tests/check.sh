@@ -41,6 +41,14 @@ must SKILL.md '~6-10 model calls'
 must_not SKILL.md '~6-11 model calls'
 must SKILL.md 'Save the user.s parsed flags \(`--with-external`, `--save-adr`, `--no-record`, `--spectator`, `--position`, `--no-position`, `--model`\)'
 
+# --- TASK 5 ---
+must SKILL.md 'subagent_type="psychodrama-champion"'
+must SKILL.md 'Protagonist position: "<PROTAGONIST_POSITION>". Stress-test it explicitly where a thesis touches it.'
+must SKILL.md 'A Champion is defending the user.s stated position'
+must_not SKILL.md 'No `model` parameter is passed — role agents inherit'
+must SKILL.md 'model="opus"'
+must SKILL.md 'model="sonnet"'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail
