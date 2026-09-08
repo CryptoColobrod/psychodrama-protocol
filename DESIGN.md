@@ -12,7 +12,7 @@ related: [[consensus-protocol]]
 > **Renamed July 2026:** `consensus-claude` → `psychodrama-protocol`. This document doubles as the
 > project's design log; historical references to the old name below are preserved as written.
 
-A Claude Code skill: multi-perspective consensus via subagents with distinct roles. One apex model, different system prompts. Runs within a Claude subscription (no extra API cost). Complements `consensus-protocol` (Claude+Gemini) — doesn't replace it.
+A Claude Code skill: multi-perspective consensus via subagents with distinct roles. One model family, different system prompts, tiers per role. Runs within a Claude subscription (no extra API cost). Complements `consensus-protocol` (Claude+Gemini) — doesn't replace it.
 
 ## Purpose and boundaries
 
@@ -62,7 +62,7 @@ Output: chat summary (always) + ADR file (for arch/sec/infra)
 ```
 
 **Principles:**
-- One apex model throughout. Not Sonnet, not a mix.
+- One model family throughout; tiers per role (Decomposer/Judge/Skeptic/figures on Opus, voters on Sonnet), declared in agent frontmatter.
 - R1 parallelism = isolation. Each subagent sees only: the original question + the list of theses + its own role mandate. It does not see other roles or their positions.
 - The judge is a separate subagent — not the main Opus. Clean aggregation context.
 - Hard cap: R1 + R2, never R3.
@@ -194,7 +194,7 @@ Response parsing is a regex over the statuses, applied identically to CLI stdout
 
 **Known limitations (stated explicitly):**
 - The `Agent` tool in Claude Code doesn't let you vary temperature per subagent → one classic anti-groupthink technique is unavailable.
-- Every agent is the same model → shared blind spots can't be fully ruled out. The external critic fallback closes this gap partially, not completely.
+- Every agent is from the same model family → shared blind spots can't be fully ruled out. The external critic fallback closes this gap partially, not completely.
 
 ## 5. Stop conditions and stagnation
 
@@ -395,6 +395,8 @@ In v1, the panel is assembled in a way that's category-correct for a markdown sk
 
 **`Resource-keeper` (shipped in v2.1.0).** The shelf's first role to move from concept to an actual agent file — opt-in via `--roles "+Resource-keeper"`, off by default like the rest of the shelf. Where the golden standard and the rest of the shelf are built to find fault, Resource-keeper's mandate is structurally inverted: every other role's silence on what already works is a blind spot the panel doesn't self-correct for, so Resource-keeper exists specifically to name what must survive the vote regardless of outcome.
 
+**`Champion` (shipped in v2.2.0).** A conditional voice, neither golden standard nor shelf: it enters only when a Protagonist position is staged (`--position`, or the Triage offer). Mandate is advocacy in the standard vote format plus a mandatory `WEAK_POINT:`; it is non-adversarial and does not count toward Size. This closes the protagonist element of the stage metaphor without touching the panel's constitution.
+
 **Panel invariants** (defined in Protocol · Panel invariants, repeated here for convenience when picking from the shelf):
 - **Adversarial Presence** — the active panel must include ≥1 adversarial role; the default is `Skeptic`, but `Security` and `Scope-cutter` also qualify.
 - **Size** — 3–7 active roles.
@@ -406,7 +408,7 @@ Deliberate-debt signal: most shelf roles being off by default is curation, not a
 
 ## Known limitations (stated explicitly)
 
-- **Single-model echo chamber.** Every Opus agent is the same model. The external critic fallback layer closes this gap partially, not completely. This is a deliberate trade-off in exchange for cost and speed.
+- **Single-model echo chamber.** Every agent is from the same model family. The external critic fallback layer closes this gap partially, not completely. This is a deliberate trade-off in exchange for cost and speed.
 - **Fragile classification.** The cascade heuristic can misfire. Manual override is mandatory. We're not attempting an ML classifier.
 - **Prompt quality = system quality.** 90% of success comes down to the wording of each role's mandate. Requires iterative tuning.
 - **No temperature variation.** A technical limitation of the Claude Code Agent tool.

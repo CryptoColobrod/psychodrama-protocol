@@ -4,7 +4,17 @@
 
 This repository is the protocol's reference implementation for Claude Code (formerly `consensus-claude`).
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-2.2.0-informational.svg)](CHANGELOG.md)
+
 Prefer a plain name? In a session the skill also answers to **"consensus panel"** — the mythology is optional; the mechanics are not.
+
+## Quick start
+
+```bash
+git clone https://github.com/CryptoColobrod/psychodrama-protocol.git && cd psychodrama-protocol
+mkdir -p ~/.claude/skills/psychodrama-protocol ~/.claude/agents && cp SKILL.md DESIGN.md ~/.claude/skills/psychodrama-protocol/ && cp agents/psychodrama-*.md ~/.claude/agents/
+```
+Restart Claude Code, then: `/psychodrama-protocol Should we move session storage from PostgreSQL to Redis?` — the panel asks for confirmation before spending any calls. Full install notes, flags and cost are below.
 
 ## The differentiator
 
@@ -18,7 +28,7 @@ Most review tools score a decision holistically: one pass, one verdict. The Psyc
 
 **vs. alternatives:** tools like [agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) review a document holistically, as one blob. Multi-model council tools require multiple model providers by default. The Psychodrama Protocol's unit of judgment is the individual claim, and it needs exactly one model to do it.
 
-**Heads-up on cost:** one full run = ~6-11 calls on your strongest available model (decomposer + 4 role votes + judge, plus targeted round-2 re-votes when theses are disputed). Expect several minutes and meaningful quota use on subscription plans. Built for decisions that deserve it — not for quick questions.
+**Heads-up on cost:** one full run = ~6-10 calls (decomposer + 4 role votes + judge, plus targeted round-2 re-votes by the roles that disputed). Decomposer, Judge and Skeptic run on your strongest tier; the other voters run on a cheaper one — see the tier table under Install. Expect several minutes and meaningful quota use on subscription plans. Built for decisions that deserve it — not for quick questions.
 
 ## When to use this skill
 
@@ -35,7 +45,7 @@ For quick questions, just ask directly — the panel is deliberately heavyweight
 
 ## Why a psychodramatist built this
 
-Konstantin Shvedov is a practicing psychologist and psychodramatist. He also builds SessionFlow, an AI platform for psychotherapists.
+Konstantin Shvedov is a practicing psychologist and psychodramatist. He also builds [SessionFlow](https://shvedovpro.com/sessionflow) (site in Russian), an AI platform for psychotherapists.
 
 The core insight is transplanted straight from the therapy stage: a problem becomes tractable when it is *staged* — given to roles, each with its own mandate to fight for. Nobody resolves a conflict by holding it in their head as one blob; you put each side in a chair and let it argue. The protocol is Moreno's psychodrama, mapped onto decision engineering.
 
@@ -47,7 +57,8 @@ The core insight is transplanted straight from the therapy stage: a problem beco
 | Tailored antagonists | critics with biographies — an opponent built from this idea's failure class |
 | The empty chair | the Judge must name the direction nobody was minted to defend |
 | Surplus reality | duel mode: the problem generates voices that do not exist until staged |
-| Role reversal | perspective swap *(roadmap)* |
+| Role reversal | `STEELMAN:` in round 2 — every re-vote first states the opponent's strongest case |
+| The protagonist | `--position` — the user's own stance gets a chair and a Champion, and the verdict says whether it survived |
 | The figure above the system | 🕊 the outside-the-frame voice — dissolves a deadlock from above |
 | The shadow / the tempter | 🔥 the transgressive voice — the suppressed option, staged at last |
 
@@ -84,89 +95,25 @@ T6: Keeping sessions in PostgreSQL avoids data-consistency and durability compli
 
 ### Votes that show the machinery working
 
-**Skeptic on T5 — catching circular justification:**
+**Skeptic on T5 — catching circular justification, then a Judge FLIP:**
 
 ```
 T5: DISPUTED Self-contradiction with T1/T3 — this thesis ("gains justify the new component")
     cannot be true if T1 (bottleneck is real) and T3 (Redis materially outperforms) are
-    themselves unproven. T5 presumes established "expected gains" while T1/T3 supply no
-    measured baseline from which any gain could be computed. Justification is circular
-    absent data.
+    themselves unproven. FLIP: measured p99 latency + QPS baseline on current Postgres.
 ```
-**→ note:** the Skeptic isn't objecting to Redis — it's flagging that the justification thesis depends on two other theses that are themselves unproven. That's a structural catch a holistic "thumbs up/down" review would miss.
-
-**Security abstaining out-of-lens on T1–T3, then landing a CONDITION on T4:**
-
-```
-T1: AGREED — outside my lens, deferring to the relevant role.
-T2: AGREED — outside my lens, deferring to the relevant role.
-T3: AGREED — outside my lens, deferring to the relevant role.
-T4: AGREED_WEAK Redis's default-no-auth network boundary is an authz gap (Unvalidated trust
-    at a boundary). CONDITION: Redis bound to private network/localhost with requirepass or
-    ACLs+TLS, never default no-auth.
-```
-**→ note:** Security correctly stays out of performance theses it has no lens on — but on T4 it names the exact failure: default-no-auth Redis reachable on a network means an attacker can `KEYS */GET` to dump and replay live session tokens, i.e. session hijacking. This is the mandatory attack vector the Security role must always produce.
 
 **Optimizer's T2 CONDITION tag:**
 
 ```
-T2: AGREED_WEAK Read-through cache on existing Postgres reuses a well-understood pattern and
-    reduces added state vs. a store swap. AGREED_WEAK not AGREED because "sufficiently" is
-    load-dependent. CONDITION: holds if the hot-path read/write ratio is skewed enough that
-    caching absorbs the contention (i.e., sessions are read far more than written).
+T2: AGREED_WEAK Read-through cache on existing Postgres reuses a well-understood pattern.
+    CONDITION: holds if the hot-path read/write ratio is skewed enough that caching absorbs
+    the contention (i.e., sessions are read far more than written).
 ```
-**→ note:** conditional agreement expressed as a tag inside the rationale, not a 5th status — the Judge extracts every `CONDITION:` line across all votes and surfaces them as prerequisites in the final synthesis.
 
-**A DISAGREEMENT block — Maintainability-advocate vs. Optimizer on T5:**
+**Net verdict:** the panel favors **keep Postgres + add a scoped read-through cache** over a Redis migration — conditional on confirming the pain is real and read-dominated *first*.
 
-<details>
-<summary>Maintainability-advocate's counter (click to expand)</summary>
-
-```
-DISAGREEMENT:
-TARGET: Optimizer
-THESIS: T5
-COUNTER: Optimizer will likely favor Redis on idiomaticity/performance grounds, but the
-decisive cost is structural: adding Redis as a second system of record permanently splits
-session truth across two stores, so every future change to session semantics (expiry, shape,
-failure handling) becomes a dual-store consistency edit — a coupling tax paid on every
-change, not a one-time migration cost, and it's being justified by T1/T3 gains that remain
-unmeasured.
-```
-</details>
-
-**→ note:** "coupling tax on every change, not a one-time cost" — this is the mandatory structured disagreement format (`TARGET`/`THESIS`/`COUNTER`), citing a concrete mechanism instead of a slogan.
-
-### The Judge's Holism check
-
-<details>
-<summary>Full Holism check finding (click to expand)</summary>
-
-```
-The recommended path (T2) partially erodes the very property that makes the recommendation
-safe (T6): T6's value is "one system of record ⇒ one place to reason about session truth,"
-and T2 introduces a second piece of runtime state (the cache) that can diverge from that
-record — the classic stale-session-after-logout bug. The whole is *not* the sum of its
-parts: "Postgres + cache" preserves T6's single-truth guarantee **only if** the cache is
-pure read-through, source-of-truth-in-Postgres, invalidated on write/logout. The moment it
-becomes write-through/write-back, it reintroduces exactly the dual-store coupling the panel
-rejected Redis to avoid. This constraint is load-bearing, not cosmetic.
-```
-</details>
-
-**→ note:** the panel's own recommended path (T2, the cache) partially eroded the property that made it safe in the first place (T6, single source of truth). The Judge caught it and promoted a soft nuance into a load-bearing constraint. This is what per-thesis voting plus an explicit holism guard buys you — a check that individual per-claim votes, by construction, don't perform on their own.
-
-### Net verdict
-
-The panel favors **keep Postgres + add a scoped read-through cache** over a Redis migration — conditional on confirming the pain is real and read-dominated *first*. If the bottleneck (T1) is never substantiated, even the cache work is premature optimization.
-
-**Concrete unblocking step:** capture five numbers on the current Postgres — session-table p99 read/write latency, QPS, read:write ratio, connection-pool saturation, autovacuum/WAL pressure from session-row updates. Those five numbers decide T1, populate T3, and tell you whether the answer is "cache the hot reads," "fix the write pattern" (a cache is the wrong tool), or "no action needed yet."
-
-Full unabridged run: [examples/session-storage-demo.md](examples/session-storage-demo.md)
-
-*Honesty note: the demo's optional targeted R2 was not run — the Judge finalized from R1, handling still-disputed theses through the Unresolved and Prerequisites sections, exactly as the mandate allows. A production run re-votes disputed theses in R2 before finalizing.*
-
-LLM output is non-deterministic — your run on the same question will differ. What the skill guarantees is the structured process (isolated votes, forced disagreement, holism check), not identical prose. Weak verdict? Open an issue and attach the run record.
+→ Full run, unedited: [examples/session-storage-demo.md](examples/session-storage-demo.md). Two more: [duel-demo.md](examples/duel-demo.md), [self-review.md](examples/self-review.md), [market-test-demo.md](examples/market-test-demo.md).
 
 ---
 
@@ -205,9 +152,9 @@ Plus two utility agents outside the vote: `Decomposer` (splits the question into
 - **Size** — 3 to 7 active roles.
 - **No redundancy** — no two roles with heavily overlapping mandates active at once.
 
-**Output** is an 8-section synthesis: Consensus, Holism check, Trade-offs, Blockers, Prerequisites, Nuances, Unresolved, Devil's advocate. It now opens with `CONSENSUS_STRENGTH` — `Strong consensus` / `Working consensus` / `Narrowly carried` / `Contested` — so you know how much weight the verdict can bear before reading a single section.
+**Output** is an 8-section synthesis: Verdict, Holism check, Trade-offs, Blockers, Prerequisites, Nuances, Unresolved, Devil's advocate. It now opens with `CONSENSUS_STRENGTH` — `Strong` / `Working` / `Narrowly carried` / `Contested` — so you know how much weight the verdict can bear before reading a single section.
 
-Every run writes a Verifiable Decision Record — a structured markdown transcript (question → intent → votes → conditions → dissent → verdict) — to `./consensus-runs/`, opt out with `--no-record`. The record is the artifact to attach when reporting a weak verdict. Each record opens with an `AUDIT_BLOCK` — a machine-readable summary (date, mode, roster, consensus strength, verdict, key assumptions) — so you can paste the whole record into any external model and ask it to audit the panel's reasoning, no re-run required. Every run also appends one line — date, question, strength, verdict, link — to `./consensus-runs/INDEX.md`, turning your engineering decisions into a browsable ledger over time. These records contain your questions verbatim — treat as sensitive, and add `consensus-runs/` to `.gitignore` in git repositories (the skill drops a `README.txt` reminder in the directory on first write, and nudges you toward `.gitignore` if it detects a git repo).
+Every run writes a Verifiable Decision Record — a structured markdown transcript (question → intent → votes → conditions → dissent → verdict) — to `./consensus-runs/`, opt out with `--no-record`. The record is the artifact to attach when reporting a weak verdict. Each record opens with an `AUDIT_BLOCK` — a machine-readable summary (date, mode, roster, `consensus_strength`, verdict, key assumptions) — so you can paste the whole record into any external model and ask it to audit the panel's reasoning, no re-run required. Every run also appends one line — date, question, strength, verdict, link — to `./consensus-runs/INDEX.md`, turning your engineering decisions into a browsable ledger over time. These records contain your questions verbatim — treat as sensitive, and add `consensus-runs/` to `.gitignore` in git repositories (the skill drops a `README.txt` reminder in the directory on first write, and nudges you toward `.gitignore` if it detects a git repo).
 
 `SKILL.md` is self-describing — its canonical Protocol block at the top **is** the specification the orchestrator executes. Read that one block and you know the whole system.
 
@@ -233,6 +180,8 @@ Enabling a role means editing the roster list in `SKILL.md`'s Protocol block —
 **Tuning roles:** the agent files ARE the source — editing mandates and operational heuristics in `~/.claude/agents/psychodrama-*.md` is a supported customization path, not a hack. Keep the vote-format contract (statuses + `CONDITION:` tag + `DISAGREEMENT` block) intact so the Judge can still parse it.
 
 Full role metadata (`when_to_enable` / `conflicts_with`) is in [DESIGN.md · Role Library](DESIGN.md).
+
+Not only for engineering: [examples/market-test-demo.md](examples/market-test-demo.md) puts a pricing decision in front of a panel of buyer personas minted with `--roles` — CFO, end user, procurement, the client's security lead — with Skeptic kept for the invariant.
 
 ---
 
@@ -266,6 +215,28 @@ Same release ships the shelf's first role as an actual agent file, `Resource-kee
 
 ---
 
+## Spectator mode
+
+`--spectator` renders the run as a match instead of a report. The Judge appends a `## Match report` to the synthesis: one block per thesis naming who struck first and with which tag (a real `ANCHOR:`/`FLIP:`/`CONDITION:`/`REFRAME:` quoted from the votes, never invented), who held and who flipped in round 2 and after which `STEELMAN:`, then a score line. Zero extra calls — it's a render pass over votes the panel already cast.
+
+```
+Match report
+
+T4: Security struck first with ANCHOR: "default-no-auth Redis" — Optimizer held, Maintainability
+    flipped in R2 after Security's STEELMAN. Score: 3:1 against unconditioned Redis.
+
+### Figures on stage
+none
+
+### Minority report
+Optimizer: Redis still wins on raw throughput if the operational cost is amortized...
+
+### One-line result
+Keep Postgres, add a scoped cache — carried 3:1, one dissent on record.
+```
+
+---
+
 ## Install
 
 **Requirements:** Claude Code (the skill orchestrates panel roles via its subagent tool).
@@ -281,7 +252,7 @@ cp agents/psychodrama-*.md ~/.claude/agents/
 
 > A full panel run makes several calls on your strongest model and takes a few minutes — see the cost note above before your first run.
 
-**Model:** the agents inherit your current session's model — there's no separate Opus key or config to set. The skill works best on the strongest apex model available in your session and degrades gracefully on smaller ones.
+**Model tiers:** agents declare their tier in frontmatter — Decomposer, Judge, Skeptic and the figures on `opus`; Optimizer, Security, Maintainability-advocate, Resource-keeper and Champion on `sonnet`. `--model opus|sonnet|haiku` overrides for one run. No API key: the skill runs inside your Claude Code subscription.
 
 **Usage:**
 
@@ -289,7 +260,7 @@ cp agents/psychodrama-*.md ~/.claude/agents/
 /psychodrama-protocol <your question>
 ```
 
-or say "claude consensus" / "consensus panel" in a session.
+or say "psychodrama" / "put this on stage" / "consensus panel" in a session.
 
 **Flags:**
 
@@ -305,6 +276,10 @@ or say "claude consensus" / "consensus panel" in a session.
 | `--emergent` | Deprecated alias for `--mode duels` |
 | `--summon` | `above`, `below`, or `both` — forces a figure regardless of trigger state |
 | `--no-figures` | Suppresses both figures even if a deadlock trigger fires |
+| `--spectator` | Render mode: the Judge appends a `## Match report` (per-thesis hits citing real tags, figures on stage, minority report, one-line result). Zero extra calls |
+| `--position "<text>"` | Stage the Protagonist chair with this position: a Champion defends it in R1 (+1 call), voters stress-test it, the Judge reports `PROTAGONIST:`. Panel mode only |
+| `--no-position` | Suppress the offer of a Protagonist chair even if the question states a stance |
+| `--model opus\|sonnet\|haiku` | Override every agent's tier for this run |
 
 **External critic (optional, any model):** used only as the anti-groupthink fallback when the panel goes fully unanimous on a security-adjacent thesis. Reached via a small ladder: configure any CLI that takes a prompt and prints text (one line in `SKILL.md`'s Protocol block — the [`gemini` CLI](https://github.com/google-gemini/gemini-cli) works out of the box as the default worked example), or skip the install entirely and use the built-in copy-paste handoff — the skill prints the critic prompt for you to paste into any other model you have, then paste the reply back. Decline either way and the run continues gracefully, with the status reported honestly (e.g. `skipped (user_declined)`) rather than failing. Before anything leaves the machine via the configured CLI, the skill prints a per-run confirmation naming the exact destination command and waits for your approval — `--with-external` forces the critic to fire, but never bypasses this confirmation.
 

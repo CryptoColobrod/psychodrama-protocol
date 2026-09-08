@@ -4,6 +4,49 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.0] - 2026-09-08
+
+### Added
+
+**The Protagonist chair**
+- `--position "<text>"` stages the user's own position: a `psychodrama-champion` agent defends it
+  thesis by thesis (+1 call) and must name its `WEAK_POINT:`; voters stress-test it; the Judge
+  reports `PROTAGONIST: survived | survived with conditions | did not survive`.
+- Triage offers the chair when the question states a stance ("I want to", "we decided", …);
+  `--no-position` suppresses the offer. Panel mode only.
+- Skeptic receives an anchoring guard when a Champion is on stage.
+
+**Role reversal — `STEELMAN:` in round 2**
+- Every re-vote must first state the strongest version of the opposing position. A re-vote
+  without it is invalid. Zero extra calls.
+
+**Spectator mode — `--spectator`**
+- The Judge appends a `## Match report`: per-thesis hits citing real tags, who flipped and after
+  what, figures on stage, a named minority report, a one-line result. Zero extra calls.
+
+**Examples**
+- `examples/market-test-demo.md` — a product/pricing question judged by a panel of buyer
+  personas minted with `--roles`, no new preset.
+- `examples/self-review-v2.2.md` — the protocol judges this release with the new tiers.
+
+### Changed
+
+**Model tiers**
+- "One apex model everywhere" → "one model family, tiers per role". Decomposer, Judge, Skeptic
+  and the figures declare `model: opus`; Optimizer, Security, Maintainability-advocate,
+  Resource-keeper and Champion declare `model: sonnet` in their frontmatter. Duel calls pass the
+  tier explicitly (critic opus, champion sonnet). `--model <tier>` overrides for one run.
+- `AUDIT_BLOCK` gains `tiers:`, `protagonist:`, `r2_participants:`.
+
+**Cost**
+- Early finalize is one Judge call: when nothing is disputed, Phase A and Phase B+C arrive in the
+  same reply. Panel minimum is now a true 6 (the previous "6" omitted the second Judge call).
+- Targeted R2 roster: only roles that disputed re-vote, plus Skeptic. Panel budget ~6-10 calls
+  (typical 8) instead of ~6-11 (typical 11).
+
+### Fixed
+- Cost figures in README and SKILL.md now match the actual call structure.
+
 ## [2.1.0] - 2026-07-19
 
 ### Added

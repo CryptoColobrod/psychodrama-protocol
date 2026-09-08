@@ -78,6 +78,24 @@ must agents/psychodrama-judge.md 'PROTAGONIST:'
 must agents/psychodrama-judge.md '## Match report'
 must agents/psychodrama-judge.md 'WEAK_POINT'
 
+# --- TASK 9 ---
+must CHANGELOG.md '^## \[2.2.0\] - 2026-09-08$'
+must_not DESIGN.md 'Not Sonnet, not a mix'
+must_not DESIGN.md 'Every Opus agent is the same model'
+must DESIGN.md 'Champion'
+must README.md 'img.shields.io/badge/license-MIT'
+must README.md 'img.shields.io/badge/version-2.2.0'
+must README.md '## Quick start'
+must README.md '\[SessionFlow\]\(https://shvedovpro.com/sessionflow\) \(site in Russian\)'
+must README.md '~6-10 calls'
+must_not README.md '~6-11 calls'
+must_not README.md 'the agents inherit your current session.s model'
+must README.md 'Role reversal \| `STEELMAN:` in round 2'
+must README.md 'The protagonist \| `--position`'
+must README.md 'examples/market-test-demo.md'
+must_not README.md 'or say "claude consensus"'
+must README.md '^## Spectator mode'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail
