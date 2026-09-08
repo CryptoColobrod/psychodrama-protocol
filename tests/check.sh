@@ -21,6 +21,19 @@ must agents/psychodrama-champion.md '^name: psychodrama-champion$'
 must agents/psychodrama-champion.md 'WEAK_POINT:'
 must agents/psychodrama-champion.md 'does not satisfy Adversarial Presence'
 
+# --- TASK 3 ---
+must SKILL.md 'One model family across all agents'
+must_not SKILL.md 'Not Sonnet, not a mix'
+must SKILL.md '^\| `--spectator` \|'
+must SKILL.md '^\| `--position "<text>"` \|'
+must SKILL.md '^\| `--no-position` \|'
+must SKILL.md '^\| `--model opus'
+must SKILL.md 'STEELMAN:'
+must SKILL.md 'Targeted R2 roster'
+must SKILL.md 'psychodrama-champion'
+must_not SKILL.md '6-11 panel mode'
+must SKILL.md '~6-10 panel mode'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail

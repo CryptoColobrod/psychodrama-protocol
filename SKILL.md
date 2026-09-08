@@ -54,6 +54,11 @@ Default active panel (gold standard) — 4 roles:
 
 Plus two utility agents outside the voting panel: `Decomposer` and `Judge`.
 
+Conditional voice (neither golden standard nor shelf): `Champion` (`psychodrama-champion`) — present
+only when a Protagonist position is on stage (see Flags · `--position`). Defends the user's stated
+position thesis by thesis and must name its weakest point (`WEAK_POINT:`). Non-adversarial; does not
+satisfy Adversarial Presence; does not count toward Size.
+
 Optional roles (shelved, off by default — see DESIGN.md · Role Library for how to enable):
 `Performance-hawk`, `Product-thinker`, `Scope-cutter`, `Simplicity-advocate`, `Domain-expert`.
 First shelf role shipped as a file: `Resource-keeper` (opt-in) — the counterweight to an all-critics panel's loss-aversion.
@@ -109,10 +114,24 @@ the same thesis from ≥2 roles (a REFRAME cluster), that's a standing trigger f
 The figures below) — fired early, before R2. All four tags are optional elsewhere and, like
 `CONDITION`, live inside the rationale text rather than expanding the status vocabulary.
 
+- `STEELMAN: <text>` — R2 only, mandatory on every re-voted thesis: the strongest version of the
+  opposing position, in the role's own words, written *before* the vote. Role reversal without an
+  extra round. A re-vote without `STEELMAN:` is invalid (same handling as a `DISPUTED` without `FLIP:`).
+- `WEAK_POINT: T<n> — <text>` — Champion only, mandatory, once per run: the thesis where the
+  Protagonist's position is most exposed.
+
 ### Rounds & stop conditions
 
 - **Hard cap: R1 + optional R2. Never R3.** If a single model hasn't converged after 2 rounds —
   that's a signal to escalate to the external `consensus-protocol` (Claude+Gemini), not to spin the panel further.
+- **Targeted R2 roster.** R2 dispatches only the roles that voted `DISPUTED` or
+  `NEEDS_CLARIFICATION` on at least one thesis in `DISPUTED_THESES`, **plus always `Skeptic`**
+  (Adversarial Presence holds in R2). Roles not dispatched keep their R1 votes; the Judge is told
+  who re-voted via an explicit `R2_PARTICIPANTS:` line.
+- **Early finalize = one Judge call.** If Phase A finds `DISPUTED_THESES` empty (and no early 🕊),
+  the same Judge call also delivers Phase B+C; Steps 6–8 are skipped.
+- **Budget (panel):** 1 Decomposer + 4 votes + 1 Judge = 6 minimum; with R2, +1–4 re-votes +1 Judge
+  = 8–10; typical 8. Protagonist +1, figures +1–2, external critic +1. Duels: 9–13.
 - R2 only runs if disputed theses remain after aggregation; otherwise — early finalize.
 - Stagnation (R2 arguments are a semantic rehash of R1) → the thesis is marked `STAGNATED`, R3 is not invoked.
 - The final synthesis opens with `CONSENSUS_STRENGTH` (`Strong` / `Working` / `Narrowly carried` / `Contested`) — the Judge's own one-word read on how solid the verdict is, emitted before the rest of Phase C.
@@ -163,8 +182,20 @@ questions outside engineering decision-making. For an out-of-scope question — 
 
 ### Model
 
-One apex model across all agents (orchestrator + roles + Judge). Model-agnostic: uses whatever
-apex model the environment currently has. Not Sonnet, not a mix of models across roles.
+One model family across all agents (orchestrator + roles + Judge) — no cross-vendor dialogue by
+default (that is `consensus-protocol`, a separate skill). Tiers may differ per role, and the tier
+lives in each agent file's frontmatter (`model: opus` / `model: sonnet`):
+
+| Tier | Agents | Why |
+|---|---|---|
+| `opus` | Decomposer, Judge, Skeptic, 🕊 outside-frame, 🔥 transgressive | thesis quality, synthesis, the adversarial core, the rare weighty figures |
+| `sonnet` | Optimizer, Security, Maintainability-advocate, Resource-keeper, Champion | a per-thesis vote in a fixed tagged format |
+
+Two mechanisms, deliberately: named agents carry their tier in frontmatter and the orchestrator
+passes no `model` parameter; duel-mode calls (Step 4c) use the generic `claude` subagent and the
+orchestrator passes `model` explicitly — `opus` for the Tailored Critic, `sonnet` for the Champion.
+`--model <tier>` overrides every agent for one run (the orchestrator then passes that `model` on
+every Agent call, including the Judge). Cost reference: Sonnet is roughly a fifth of Opus per call.
 
 ### Output language
 
@@ -183,7 +214,7 @@ The skill activates on any of:
 
 **Deliberateness gate.** The two trigger paths carry different intent signal:
 - **Slash command** (`/psychodrama-protocol <question>`) is always a deliberate, explicit invocation → proceed directly to Triage. The Step 1 estimate line is sufficient; no confirmation is needed.
-- **Trigger phrase in conversation** ("psychodrama" etc.) may be a casual aside, not a deliberate request for a full panel run → before dispatching any subagent, the orchestrator must print ONE confirm line: `A full run costs ~6-13 model calls (~6-11 panel mode, ~9-13 duels mode), +1-2 calls if the stage deadlocks (figures; --no-figures to suppress), and takes several minutes. Proceed?` and wait for the user's confirmation before continuing to Triage. (The precise mode and its exact estimate are confirmed again in Step 1, once Triage has classified.)
+- **Trigger phrase in conversation** ("psychodrama" etc.) may be a casual aside, not a deliberate request for a full panel run → before dispatching any subagent, the orchestrator must print ONE confirm line: `A full run costs ~6-13 model calls (~6-10 panel mode, ~9-13 duels mode; +1 if a Protagonist chair is staged), +1-2 calls if the stage deadlocks (figures; --no-figures to suppress), and takes several minutes. Proceed?` and wait for the user's confirmation before continuing to Triage. (The precise mode and its exact estimate are confirmed again in Step 1, once Triage has classified.)
 
 **First action** (mandatory, before any subagent calls): print to the user:
 
@@ -207,6 +238,10 @@ Immediately after — for the trigger-phrase path, the deliberateness gate above
 | `--emergent` | Alias for `--mode duels` (deprecated name) |
 | `--no-figures` | Never summon the deadlock figures automatically |
 | `--summon above\|below\|both` | Force a figure onto the stage regardless of deadlock — 🕊 above, 🔥 below |
+| `--spectator` | Render mode: the Judge appends a `## Match report` (per-thesis hits citing real tags, figures on stage, minority report, one-line result) to the synthesis and the record. Zero extra calls |
+| `--position "<text>"` | Stage the Protagonist chair with this position: a Champion defends it in R1 (+1 call), voters stress-test it, the Judge reports `PROTAGONIST:`. Panel mode only |
+| `--no-position` | Suppress the Triage offer of a Protagonist chair even if the question states a stance |
+| `--model opus\|sonnet\|haiku` | Override every agent's tier for this run (see Protocol · Model) |
 
 Unknown flags: print a warning `⚠️ Unknown flag: <name>, continuing.` and don't stop.
 
@@ -948,7 +983,7 @@ If the flag is absent — skip this step silently.
 
 ## Principles (for the main model reading this skill)
 
-- **One apex model everywhere** (see Protocol · Model). Not Sonnet, not a mix.
+- **One model family everywhere** (see Protocol · Model). Tiers may differ per role; no cross-vendor dialogue by default.
 - **R1 = isolation.** The entire roster starts in a single message (parallel tool-use), each in a clean context. No cross-talk between roles in R1.
 - **The Judge is a separate subagent.** Not the main model. A clean context for aggregation.
 - **Hard cap: R1 + R2. Never R3** (see Protocol · Rounds & stop conditions).
