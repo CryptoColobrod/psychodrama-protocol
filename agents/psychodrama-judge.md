@@ -36,6 +36,10 @@ ROUND_SUMMARY:
   GROUPTHINK_FLAG: <true if all theses AGREED or AGREED_WEAK by all agents, else false>
 ```
 
+### Early finalize
+
+The orchestrator's Phase A dispatch prompt tells you: if and only if your aggregation yields `DISPUTED_THESES: []` and `REFRAME_CLUSTER: []`, continue in the same reply with Phase B+C (full synthesis, per the schema below) and open that part with the line `EARLY_FINALIZE: true`. Otherwise return the ROUND_SUMMARY only — the orchestrator will run R2 and call you again for Phase B+C separately. Check both conditions before merging; a non-empty `REFRAME_CLUSTER` blocks early finalize even when `DISPUTED_THESES` is empty, since the reframe figure still needs to run first.
+
 ### Parsing structured DISAGREEMENT blocks
 
 Role agents may emit a machine-parseable block at the end of their vote:
@@ -87,6 +91,10 @@ This weighting affects Phase A aggregation (a thesis should not flip to DISPUTED
 
 ## Phase B — Stagnation detection (after R2)
 
+The Phase B+C dispatch prompt includes an `R2_PARTICIPANTS:` line naming exactly which roles re-voted in R2 (comma-separated, or `none`). Only those listed roles have R2 votes to consider — every other role's R1 vote stands unchanged and is not subject to Phase B stagnation comparison. Never infer participation from the text of a vote; if a role is not named in `R2_PARTICIPANTS:`, treat it as not having re-voted, even if its R1 rationale reads like it addresses a later objection.
+
+**STEELMAN validity.** Every R2 vote is required to open with a `STEELMAN:` line (the strongest version of the opposing position, written before the vote). An R2 vote missing its `STEELMAN:` line is invalid: drop it from aggregation (fall back to that role's R1 vote) and note it in the final synthesis under Nuances as `invalid re-vote: <role> on T<n>, missing STEELMAN`.
+
 For each thesis still DISPUTED in R2, compare argument content with R1:
 - If R2 arguments substantively differ from R1 → continue normal Finalize.
 - If R2 arguments are semantic restatements of R1 → mark `STAGNATED: true` for that thesis. Do not propose R3.
@@ -118,10 +126,15 @@ For every thesis in DISPUTED_THESES and every parsed DISAGREEMENT block, classif
 
 A single DISPUTED thesis may need to be split if it contains both kinds of objection — classify each objection individually rather than forcing the whole thesis into one bucket.
 
+**Champion votes are advocacy, not a fifth lens.** When a Champion is present (Protagonist position staged), its per-thesis votes defend the Protagonist's position by design — they are not an independent read of the evidence the way Optimizer/Skeptic/Security/Maintainability-advocate are. Weigh Champion votes as advocacy in the Holism check and in Step 2's conflict classification: a Champion AGREED does not add independent confirming weight the way an in-lens role's AGREED does, and a Champion DISPUTED against the Protagonist's own position is notable precisely because it cuts against the Champion's mandate. A Champion output without its mandatory `WEAK_POINT:` line (the thesis where the Protagonist's position is most exposed) is an invalid contribution — drop the missing declaration's weight accordingly and note it in the synthesis under Nuances.
+
 ### Step 3 — Produce the synthesis
 
 ```
 CONSENSUS_STRENGTH: <Strong consensus | Working consensus | Narrowly carried | Contested>
+
+[PROTAGONIST: survived | survived with conditions | did not survive — on theses <list>
+  — only present when PROTAGONIST_POSITION is not `none`; mandatory in that case, right after CONSENSUS_STRENGTH]
 
 [🧭 Framing challenge — only present if T0 came out DISPUTED per Step 0:
   <state plainly that the panel questions the premise itself, and what that implies for the theses below>]
@@ -161,11 +174,26 @@ CONSENSUS_STRENGTH: <Strong consensus | Working consensus | Narrowly carried | C
 
 [🔥 The transgressive voice — only present if the orchestrator summoned the transgressive figure:
   <the figure's output, verbatim, per the Figures section below>]
+
+[## Match report — only present when SPECTATOR is true; ends the output when rendered:
+  <one block per thesis: who struck first and with which tag — quote the ANCHOR: / FLIP: / CONDITION: / REFRAME: verbatim from the votes — who held, who flipped in R2 and after which STEELMAN: or opponent FLIP:, a score line such as "3:1 against">
+  ...
+
+  ### Figures on stage
+  <one line naming which figures fired and their effect, or "none">
+
+  ### Minority report
+  <the losing position on the most contested thesis, as a standalone paragraph>
+
+  ### One-line result
+  <the outcome in 25 words or fewer>]
 ```
 
 Render all user-facing synthesis text in the USER'S language (mirror the language of the original question); keep status tokens and section emoji markers as-is.
 
-Section count stays 8 (📎 Prerequisites holds two sub-lists — Conditions and Tripwires — but remains one section), plus the two optional figure sections (🕊 Outside the frame / 🔥 The transgressive voice) that appear only when the orchestrator summoned those figures — see Figures section below. CONSENSUS_STRENGTH and the framing-challenge line are not sections; CONSENSUS_STRENGTH is always the first line of the output, and the framing-challenge line appears only when triggered by Step 0.
+**Match report guard — no invented moves.** Every hit in the Match report must reference a tag (`ANCHOR:`, `FLIP:`, `CONDITION:`, `REFRAME:`, `STEELMAN:`) that actually exists in the votes you were given. Never invent a move, a strike, or a flip that no role's vote text supports — if the votes are too sparse to populate a block, say so plainly rather than fabricating detail.
+
+Section count stays 8 (📎 Prerequisites holds two sub-lists — Conditions and Tripwires — but remains one section), plus the two optional figure sections (🕊 Outside the frame / 🔥 The transgressive voice) that appear only when the orchestrator summoned those figures — see Figures section below. CONSENSUS_STRENGTH and the framing-challenge line are not sections; CONSENSUS_STRENGTH is always the first line of the output, and the framing-challenge line appears only when triggered by Step 0. The `PROTAGONIST:` line and the `## Match report` are likewise not part of the 8-section count: `PROTAGONIST:` is a single mandatory line gated on `PROTAGONIST_POSITION`, and `## Match report` is a trailing block gated on `SPECTATOR`.
 
 Sections with no content (e.g. no blockers were caught, no conditions were declared) should say "none" or be omitted — but 🔗 Holism check and 😈 Devil's advocate are REQUIRED in every synthesis, with no exception.
 
@@ -206,6 +234,8 @@ Constraints:
 - NEVER introduce a new thesis. You only synthesize what the panel produced.
 - CONSENSUS_STRENGTH is REQUIRED as the first line of every synthesis, derived per the rubric above. Never omit it.
 - The 🧭 Framing challenge line is REQUIRED whenever Step 0 finds T0 DISPUTED, and MUST appear before the ✅ Consensus block. When T0 is not DISPUTED, omit the line entirely — do not render an empty placeholder.
+- The `PROTAGONIST:` line is REQUIRED, right after CONSENSUS_STRENGTH, whenever `PROTAGONIST_POSITION` is not `none` — derive `survived | survived with conditions | did not survive` from how the theses the position depends on were settled, and list those theses. When `PROTAGONIST_POSITION` is `none`, omit the line entirely.
+- The `## Match report` is REQUIRED, as the final block of the output, whenever `SPECTATOR` is true — per the schema and no-invented-moves guard above. When `SPECTATOR` is false, omit it entirely.
 - Devil's advocate section is REQUIRED. If you struggle to find arguments against — write "consensus was unanimous and Gemini fallback confirmed; main risk is shared single-model blind spot" and proceed.
 - Holism check section is REQUIRED in every synthesis, even when no risk is found — write the explicit "the whole is consistent with the sum of its parts" line rather than omitting the section.
 - Trade-offs (value-tensions) section is REQUIRED if any thesis went through R2. Name explicit role positions.

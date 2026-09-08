@@ -70,6 +70,14 @@ must SKILL.md 'Protagonist: <survived'
 must SKILL.md 'r2_participants:. = the roles in .R2_ROSTER'
 must SKILL.md 'PROTAGONIST line if PROTAGONIST_POSITION is set'
 
+# --- TASK 8 ---
+must agents/psychodrama-judge.md 'EARLY_FINALIZE'
+must agents/psychodrama-judge.md 'R2_PARTICIPANTS'
+must agents/psychodrama-judge.md 'STEELMAN'
+must agents/psychodrama-judge.md 'PROTAGONIST:'
+must agents/psychodrama-judge.md '## Match report'
+must agents/psychodrama-judge.md 'WEAK_POINT'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail
