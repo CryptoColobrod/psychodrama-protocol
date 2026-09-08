@@ -66,6 +66,10 @@ must_not SKILL.md 'One apex model everywhere'
 must SKILL.md 'One model family, tiers per role'
 must SKILL.md 'Protagonist: <survived'
 
+# --- TASK 6 fix ---
+must SKILL.md 'r2_participants:. = the roles in .R2_ROSTER'
+must SKILL.md 'PROTAGONIST line if PROTAGONIST_POSITION is set'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail
