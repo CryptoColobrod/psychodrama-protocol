@@ -49,6 +49,15 @@ must_not SKILL.md 'No `model` parameter is passed — role agents inherit'
 must SKILL.md 'model="opus"'
 must SKILL.md 'model="sonnet"'
 
+# --- TASK 6 ---
+must SKILL.md 'EARLY_FINALIZE'
+must SKILL.md 'R2_PARTICIPANTS:'
+must SKILL.md 'R2_ROSTER'
+must SKILL.md 'STEELMAN: <the strongest version'
+must SKILL.md 'PROTAGONIST: survived \| survived with conditions \| did not survive'
+must SKILL.md '## Match report'
+must_not SKILL.md 'dispatch the same roster IN PARALLEL \(single message, as in Step 4\) with the R2 prompt'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail

@@ -632,7 +632,7 @@ Call ONE subagent:
 ```
 Agent(
   subagent_type="psychodrama-judge",
-  description="Aggregate R1 votes",  prompt="Phase A. Original question: <q>. Canonical Intent: <intent>. Theses: <T1..Tn full text>. R1 votes:\n\nOptimizer:\n<full Optimizer output>\n\nSkeptic:\n<full Skeptic output>\n\nSecurity:\n<full Security output>\n\nMaintainability-advocate:\n<full Maintainability-advocate output>"
+  description="Aggregate R1 votes",  prompt="Phase A. Original question: <q>. Canonical Intent: <intent>. Theses: <T1..Tn full text>. R1 votes:\n\nOptimizer:\n<full Optimizer output>\n\nSkeptic:\n<full Skeptic output>\n\nSecurity:\n<full Security output>\n\nMaintainability-advocate:\n<full Maintainability-advocate output>[\n\nChampion (Protagonist's advocate) — position: \"<PROTAGONIST_POSITION>\":\n<full Champion output>]\n\nSPECTATOR: <true|false>\n\nIf and only if your aggregation yields DISPUTED_THESES: [] and REFRAME_CLUSTER: [], continue in the same reply with Phase B+C (full synthesis, PROTAGONIST line if a Champion voted, Match report if SPECTATOR is true) and open that part with the line EARLY_FINALIZE: true. Otherwise return the ROUND_SUMMARY only."
 )
 ```
 
@@ -644,8 +644,12 @@ Parse the Judge's output as a `ROUND_SUMMARY`:
 - `CONDITIONS: [...]` — list of `{thesis, role, condition}` objects, extracted from CONDITION tags (see Protocol · Status vocabulary).
 - `GROUPTHINK_FLAG: <true|false>` — true if ALL theses are AGREED or AGREED_WEAK across ALL agents.
 - `REFRAME_CLUSTER: [...]` — list of theses where ≥2 roles tagged `REFRAME` in their rationale (see Protocol · Status vocabulary). Non-empty (and `--no-figures` absent) → **early-summon 🕊 now**, before R2 — see Step 9 (Figures), early-summon path. 🕊's output then joins the R2 dispatch context in Step 7.
+- `EARLY_FINALIZE: true` — present only when the Judge merged Phase B+C into this call. If present:
+  save the synthesis exactly as Step 8 would, skip Steps 6–8, continue at Step 9.
 
-Save this data — needed in Steps 6–9.
+Save this data — needed in Steps 6–9. Also derive `R2_ROSTER`: every roster role that voted
+DISPUTED or NEEDS_CLARIFICATION on any thesis in `DISPUTED_THESES`, plus `Skeptic` always; plus
+`Champion` if it voted DISPUTED/NEEDS_CLARIFICATION on one of them.
 
 ### Step 6 — External critic decision
 
@@ -718,9 +722,17 @@ Wait for the user's next message.
 
 **Panel-mode only.** Duels mode has no R2 — each duel is a single isolated exchange (Step 4c).
 
-If `DISPUTED_THESES` is empty after Step 5 + Step 6 → **early finalize**, go straight to Step 8 without R2.
+This step is reached only when `DISPUTED_THESES` is non-empty after Steps 5 + 6 — early finalize
+(Step 5's `EARLY_FINALIZE: true`) already skipped straight to Step 9 when Phase A's aggregation came
+back with `DISPUTED_THESES: []` and `REFRAME_CLUSTER: []`. (A 🕊 early summon in Step 5 does not
+by itself force this step: it means `REFRAME_CLUSTER` was non-empty, which blocks `EARLY_FINALIZE`
+regardless of `DISPUTED_THESES` — so an early 🕊 and early finalize never co-occur, and if 🕊 fired
+early but `DISPUTED_THESES` is still empty, the Judge did not merge and Step 7 is reached with an
+empty R2 roster; skip straight to Step 8.)
 
-Otherwise — dispatch the same roster IN PARALLEL (single message, as in Step 4) with the R2 prompt:
+Otherwise — dispatch **`R2_ROSTER` only** (Protocol · Rounds · Targeted R2 roster) IN PARALLEL
+(single message, as in Step 4; same model-tier rule as Step 4) with the R2 prompt. Roles outside
+`R2_ROSTER` are not called; their R1 votes stand.
 
 ```
 Original question: <verbatim user question>
@@ -749,10 +761,12 @@ DISPUTED theses to re-evaluate (only these — others are settled):
 T<n>: <text>
 ...
 
-For each disputed thesis, return ONE line in same format. You may stick, change, or refine your R1 position. But provide NEW substance — repeating R1 verbatim is stagnation.
+For each disputed thesis, FIRST write one line:
+STEELMAN: <the strongest version of the opposing position, in your own words>
+THEN return your vote in the same one-line format as R1. You may stick, change, or refine your R1 position. A vote without its STEELMAN line is invalid and will be dropped. Provide NEW substance — repeating R1 verbatim is stagnation.
 ```
 
-Wait for the entire roster. If a role continues to emit a DISAGREEMENT block (Optimizer / Maintainability-advocate) — keep it, pass it to the Judge.
+Wait for all of `R2_ROSTER`. If a role continues to emit a DISAGREEMENT block (Optimizer / Maintainability-advocate) — keep it, pass it to the Judge.
 
 ### Step 8 — Judge dispatch (Phase B + C — stagnation check + final synthesis)
 
@@ -763,7 +777,8 @@ Call the Judge a second time:
 ```
 Agent(
   subagent_type="psychodrama-judge",
-  description="Final synthesis",  prompt="Phase B+C. Original question: <q>. Canonical Intent: <intent>. Theses: <T1..Tn full text>. R1 votes:\n<full roster + external critic if it ran>\n\nR2 votes (disputed only):\n<full roster on disputed theses>[\n\n🕊 Outside the frame (early summon, if it fired):\n<🕊's full output from Step 9's early-summon path, verbatim>]"
+  description="Final synthesis",
+  prompt="Phase B+C. Original question: <q>. Canonical Intent: <intent>. Theses: <T1..Tn full text>. R1 votes:\n<full roster + Champion if present + external critic if it ran>\n\nR2_PARTICIPANTS: <comma-separated R2_ROSTER, or none>\n\nR2 votes (disputed only):\n<R2_ROSTER outputs on disputed theses>[\n\n🕊 Outside the frame (early summon, if it fired):\n<🕊's full output from Step 9's early-summon path, verbatim>]\n\nPROTAGONIST_POSITION: <text or none>\nSPECTATOR: <true|false>"
 )
 ```
 
@@ -772,6 +787,18 @@ If 🕊 fired early (Step 5's `REFRAME_CLUSTER` path), its output is appended to
 The Judge does:
 - **Phase B** — for each thesis still DISPUTED after R2, compares R2's arguments against R1. If the arguments are a semantic rehash of R1 → mark the thesis `STAGNATED: true`. Do not invoke R3.
 - **Phase C** — opens with `CONSENSUS_STRENGTH` (`Strong`/`Working`/`Narrowly carried`/`Contested`, see Protocol · Rounds & stop conditions), followed by the structured final synthesis in the 8-section schema defined in the Judge mandate (rendered as the Step 10 template below): Consensus, Holism check, Trade-offs, Blockers, Prerequisites, Nuances, Unresolved, Devil's advocate — Holism check and Devil's advocate always required.
+- **STEELMAN validity** — an R2 vote without its `STEELMAN:` line is dropped from aggregation and
+  noted in the synthesis under Nuances (`invalid re-vote: <role> on T<n>, missing STEELMAN`).
+- **PROTAGONIST line** — if `PROTAGONIST_POSITION` is not `none`, Phase C includes, right after
+  `CONSENSUS_STRENGTH`, one mandatory line:
+  `PROTAGONIST: survived | survived with conditions | did not survive — on theses <list>`
+  derived from how the theses the position depends on were settled.
+- **Match report** — if `SPECTATOR` is true, Phase C ends with a `## Match report` section: one
+  block per thesis (who struck first and with which tag — quote the `ANCHOR:`/`FLIP:`/`CONDITION:`/
+  `REFRAME:` — who held, who flipped in R2 and after which `STEELMAN:` or opponent `FLIP:`, a score
+  line such as `3:1 against`), then `### Figures on stage` (one line, or `none`), `### Minority
+  report` (the losing position as a standalone paragraph), `### One-line result` (≤ 25 words).
+  Every hit must reference a tag that exists in the votes; the Judge may not invent moves.
 
 Save the Judge's output — it goes into Step 10 verbatim, and feeds Step 9 (Figures) next for the end-of-run trigger check.
 
