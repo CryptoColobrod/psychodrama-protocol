@@ -34,6 +34,13 @@ must SKILL.md 'psychodrama-champion'
 must_not SKILL.md '6-11 panel mode'
 must SKILL.md '~6-10 panel mode'
 
+# --- TASK 4 ---
+must SKILL.md "Looks like you've stated a position"
+must SKILL.md 'PROTAGONIST_POSITION'
+must SKILL.md '~6-10 model calls'
+must_not SKILL.md '~6-11 model calls'
+must SKILL.md 'Save the user.s parsed flags \(`--with-external`, `--save-adr`, `--no-record`, `--spectator`, `--position`, `--no-position`, `--model`\)'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail

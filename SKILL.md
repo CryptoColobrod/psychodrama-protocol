@@ -278,12 +278,25 @@ Routing precedence:
 
 Save the resolved mode — it drives every step from here on (Step 4 onward forks on it).
 
+**Protagonist detection (panel mode only).** If the resolved mode is `panel` and `--no-position` was
+not passed, check whether the question states the user's own stance — phrases such as "I want to",
+"we decided", "I plan to", "my proposal is", "I'm going to", or an equivalent in the user's language.
+This is a heuristic, so the offer is soft and costs nothing if wrong:
+
+- `--position "<text>"` was passed → `PROTAGONIST_POSITION = <text>`, no offer needed.
+- A stance is detected → print ONE line and wait:
+  `Looks like you've stated a position: "<quoted stance>". Give it the Protagonist chair, with a Champion to defend it? (+1 call; --position "<text>" / --no-position to force)`
+  "yes" → `PROTAGONIST_POSITION = <quoted stance>`; anything else → `PROTAGONIST_POSITION = none`.
+- Nothing detected → `PROTAGONIST_POSITION = none`, no offer.
+
+In `duels` mode `PROTAGONIST_POSITION` is always `none` (each perspective already has a champion).
+
 ### Step 1 — Print classification line
 
 Immediately after the greeting and successful Triage, print the classification line, extended with an upfront cost estimate so the user sees the cost before any subagent is dispatched:
 
 ```
-🧠 The Psychodrama Protocol · Mode: panel · Panel: <active roster> (+Decomposer +Judge) · ~6-11 model calls · several minutes
+🧠 The Psychodrama Protocol · Mode: panel · Panel: <active roster> (+Decomposer +Judge<, +Champion for the Protagonist>) · ~6-10 model calls<, +1 Protagonist> · several minutes
 ```
 
 or, in `duels` mode:
@@ -292,11 +305,11 @@ or, in `duels` mode:
 🧠 The Psychodrama Protocol · Mode: duels · 3-5 perspectives, each a Champion+Tailored Critic duel (+Decomposer +Judge) · ~9-13 model calls · several minutes
 ```
 
-Where `<active roster>` is the list of roles from Protocol · Roster (dynamic, not a literal in this file). The `~6-11 model calls` figure is fixed: 6 = R1 minimum (1 Decomposer + 4 votes + 1 Judge pass); 11 = with a full targeted R2 (+4 re-votes +1 additional Judge pass). The `~9-13 model calls` figure for duels mode: 1 Decomposer (dialectic decompose) + 1 perspective generation + 2N duel calls for N=3–5 perspectives + 1 Judge pass. Neither figure includes the figures (deadlock-breakers): +1-2 calls if the stage deadlocks (REFRAME cluster / STAGNATED / Contested), `--no-figures` to suppress — see Protocol · The figures.
+Where `<active roster>` is the list of roles from Protocol · Roster (dynamic, not a literal in this file), and the `<, +Champion …>` / `<, +1 Protagonist>` fragments appear only when `PROTAGONIST_POSITION` is set. The `~6-10 model calls` figure is fixed: 6 = early finalize (1 Decomposer + 4 votes + 1 Judge call covering Phase A and B+C); 10 = with a full targeted R2 (+4 re-votes +1 Judge pass); typical runs land at 8 because R2 re-dispatches only the roles that disputed, plus Skeptic (Protocol · Rounds). The `~9-13 model calls` figure for duels mode: 1 Decomposer (dialectic decompose) + 1 perspective generation + 2N duel calls for N=3–5 perspectives + 1 Judge pass. Neither figure includes the figures (deadlock-breakers): +1-2 calls if the stage deadlocks (REFRAME cluster / STAGNATED / Contested), `--no-figures` to suppress — see Protocol · The figures. If `--spectator` is set, mention it in the line: `· spectator render on`.
 
 (For the trigger-phrase path, this line is printed only after the user has already confirmed via the Trigger section's deliberateness gate — it is not itself the confirmation.)
 
-Save the user's parsed flags (`--with-external`, `--save-adr`, `--no-record`) for use in later steps.
+Save the user's parsed flags (`--with-external`, `--save-adr`, `--no-record`, `--spectator`, `--position`, `--no-position`, `--model`) for use in later steps: `SPECTATOR` (true/false), `MODEL_OVERRIDE` (tier or none), and `PROTAGONIST_POSITION` from Step 0.
 
 ### Step 2 — Decomposer dispatch
 
