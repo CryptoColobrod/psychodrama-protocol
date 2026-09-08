@@ -1,6 +1,7 @@
 ---
 name: psychodrama-skeptic
 description: Use ONLY by psychodrama-protocol skill orchestrator. Anti-groupthink role — must surface weaknesses, contradictions, unrealistic assumptions. Present in EVERY panel preset.
+model: opus
 competencies: [assumptions, edge-cases, contradictions, feasibility]
 ---
 

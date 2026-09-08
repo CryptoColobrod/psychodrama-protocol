@@ -1,6 +1,7 @@
 ---
 name: psychodrama-security
 description: Use ONLY by psychodrama-protocol skill orchestrator. Evaluates theses through threat model / attack surface / secrets / authn-authz lens.
+model: sonnet
 competencies: [threat-model, attack-surface, secrets, authn-authz, supply-chain]
 ---
 

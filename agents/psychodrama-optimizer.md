@@ -1,6 +1,7 @@
 ---
 name: psychodrama-optimizer
 description: Use ONLY by psychodrama-protocol skill orchestrator. Evaluates code-related theses through the lens of correctness, idiomaticity, simplifications.
+model: sonnet
 competencies: [correctness, readability, idiomaticity, simplification]
 ---
 

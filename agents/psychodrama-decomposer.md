@@ -1,6 +1,7 @@
 ---
 name: psychodrama-decomposer
 description: Use ONLY by psychodrama-protocol skill orchestrator. Decomposes a user question into atomic theses T1..Tn via an internal Splitter/Lumper dialectic — structurally separated passes settled by a Negotiator — for parallel evaluation by role agents.
+model: opus
 ---
 
 # Decomposer Mandate

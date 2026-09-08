@@ -14,6 +14,13 @@ for f in SKILL.md README.md DESIGN.md CHANGELOG.md CONTRIBUTING.md agents/*.md e
 done
 must SKILL.md '^name: psychodrama-protocol$'
 
+# --- TASK 2 ---
+for a in decomposer judge skeptic outside-frame transgressive; do must "agents/psychodrama-$a.md" '^model: opus$'; done
+for a in optimizer security maintainability-advocate resource-keeper champion; do must "agents/psychodrama-$a.md" '^model: sonnet$'; done
+must agents/psychodrama-champion.md '^name: psychodrama-champion$'
+must agents/psychodrama-champion.md 'WEAK_POINT:'
+must agents/psychodrama-champion.md 'does not satisfy Adversarial Presence'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail

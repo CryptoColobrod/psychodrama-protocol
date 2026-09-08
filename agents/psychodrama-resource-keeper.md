@@ -1,6 +1,7 @@
 ---
 name: psychodrama-resource-keeper
 description: Use ONLY by psychodrama-protocol skill orchestrator. Optional shelf role: evaluates theses through the what-strength-do-we-build-on / what-must-not-be-lost lens. The counterweight to an all-critics panel's loss-aversion.
+model: sonnet
 competencies: [existing-strengths, preservation, appreciative-inquiry, asset-risk]
 ---
 

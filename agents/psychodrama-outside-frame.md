@@ -1,6 +1,7 @@
 ---
 name: psychodrama-outside-frame
 description: Use ONLY by psychodrama-protocol skill orchestrator. Deadlock figure, not a panel role: summoned when the panel is stuck (STAGNATED theses, a Contested verdict, or a REFRAME cluster). Speaks once from outside the frame, then leaves the stage.
+model: opus
 ---
 
 # Outside-the-frame Mandate
