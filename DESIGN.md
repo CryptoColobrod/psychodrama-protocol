@@ -69,7 +69,7 @@ Output: chat summary (always) + ADR file (for arch/sec/infra)
 
 ## 2. Role presets
 
-Each role is a separate agent definition in `~/.claude/agents/consensus-claude-<role>.md` (standard Claude Code subagent pattern, following the same format as other agent definitions in `~/.claude/agents/`). **Important:** Claude Code only scans the top level of `~/.claude/agents/` — subdirectories are not supported. That's why all 6 files carry the `consensus-claude-` prefix, to avoid colliding with other agents.
+Each role is a separate agent definition in `~/.claude/agents/consensus-claude-<role>.md` (standard Claude Code subagent pattern, following the same format as other agent definitions in `~/.claude/agents/`). **Important:** Claude Code only scans the top level of `~/.claude/agents/` — subdirectories are not supported. That's why all 10 files carry the `consensus-claude-` prefix, to avoid colliding with other agents.
 
 | Task type | Base (4) | Cut (3, simple) | Add (5, complex) |
 |---|---|---|---|

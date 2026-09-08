@@ -304,7 +304,7 @@ rm ~/.claude/agents/psychodrama-*.md
 
 The `psychodrama-*` prefix on every agent file makes the second glob safe — it won't touch any unrelated agent files in `~/.claude/agents/`.
 
-**Footprint:** the skill adds 6 prefixed entries to your global agent list (`~/.claude/agents/psychodrama-*.md`) plus `SKILL.md`/`DESIGN.md` under `~/.claude/skills/psychodrama-protocol/`. Runs also write records to `./consensus-runs/` in whatever working directory you ran the skill from — those are plain markdown files and can be deleted freely at any time.
+**Footprint:** the skill adds 10 prefixed entries to your global agent list (`~/.claude/agents/psychodrama-*.md`) plus `SKILL.md`/`DESIGN.md` under `~/.claude/skills/psychodrama-protocol/`. Runs also write records to `./consensus-runs/` in whatever working directory you ran the skill from — those are plain markdown files and can be deleted freely at any time.
 
 ---
 

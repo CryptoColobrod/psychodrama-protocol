@@ -786,7 +786,7 @@ If 🕊 fired early (Step 5's `REFRAME_CLUSTER` path), its output is appended to
 
 The Judge does:
 - **Phase B** — for each thesis still DISPUTED after R2, compares R2's arguments against R1. If the arguments are a semantic rehash of R1 → mark the thesis `STAGNATED: true`. Do not invoke R3.
-- **Phase C** — opens with `CONSENSUS_STRENGTH` (`Strong`/`Working`/`Narrowly carried`/`Contested`, see Protocol · Rounds & stop conditions), followed by the structured final synthesis in the 8-section schema defined in the Judge mandate (rendered as the Step 10 template below): Consensus, Holism check, Trade-offs, Blockers, Prerequisites, Nuances, Unresolved, Devil's advocate — Holism check and Devil's advocate always required.
+- **Phase C** — opens with `CONSENSUS_STRENGTH` (`Strong`/`Working`/`Narrowly carried`/`Contested`, see Protocol · Rounds & stop conditions), followed by the structured final synthesis in the 8-section schema defined in the Judge mandate (rendered as the Step 10 template below): Verdict, Holism check, Trade-offs, Blockers, Prerequisites, Nuances, Unresolved, Devil's advocate — Holism check and Devil's advocate always required.
 - **STEELMAN validity** — an R2 vote without its `STEELMAN:` line is dropped from aggregation and
   noted in the synthesis under Nuances (`invalid re-vote: <role> on T<n>, missing STEELMAN`).
 - **PROTAGONIST line** — if `PROTAGONIST_POSITION` is not `none`, Phase C includes, right after
@@ -894,7 +894,7 @@ Round 2/2 (disputed only):
   T<n> → <accepted|accepted with amendment|stagnated|still DISPUTED>
   ...
 
-<Judge Phase C output verbatim — sections ✅ Consensus / 🔗 Holism check / 🔀 Trade-offs (value-tensions) / 🚫 Blockers (error-catches) / 📎 Prerequisites (conditions) / ⚠️ Nuances / ❓ Unresolved / 😈 Devil's advocate>
+<Judge Phase C output verbatim — sections ✅ Verdict / 🔗 Holism check / 🔀 Trade-offs (value-tensions) / 🚫 Blockers (error-catches) / 📎 Prerequisites (conditions) / ⚠️ Nuances / ❓ Unresolved / 😈 Devil's advocate>
 
 If `SPECTATOR` is true, the Judge's `## Match report` is rendered verbatim after the sections and before the figures.
 

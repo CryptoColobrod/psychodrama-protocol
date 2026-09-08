@@ -96,6 +96,14 @@ must README.md 'examples/market-test-demo.md'
 must_not README.md 'or say "claude consensus"'
 must README.md '^## Spectator mode'
 
+# --- TASK 9 fix ---
+must SKILL.md '✅ Verdict'
+must_not SKILL.md '✅ Consensus'
+must agents/psychodrama-judge.md 'Verdict'
+must README.md '10 prefixed entries'
+must_not README.md '6 prefixed entries'
+must_not DESIGN.md 'all 6 files'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail

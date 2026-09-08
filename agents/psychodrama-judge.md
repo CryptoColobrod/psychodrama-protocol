@@ -107,7 +107,7 @@ Before producing the output below, work through these steps:
 
 Look at how the panel voted on T0, the foundational premise emitted by the Decomposer. Using the same weighted read used elsewhere (competency relevance, [impact] tags, FLIP strength), determine T0's effective status.
 
-If T0 comes out DISPUTED under that weighted read, the synthesis MUST lead with the framing challenge — a line stating plainly that the panel questions the premise itself — placed before the ✅ Consensus block and before any per-thesis verdict. Do not let the rest of the synthesis quietly proceed as if the premise were settled: every subsequent verdict on T1..Tn is downstream of T0, so if the premise didn't hold, say so first and frame the rest of the synthesis as conditional on it.
+If T0 comes out DISPUTED under that weighted read, the synthesis MUST lead with the framing challenge — a line stating plainly that the panel questions the premise itself — placed before the ✅ Verdict block and before any per-thesis verdict. Do not let the rest of the synthesis quietly proceed as if the premise were settled: every subsequent verdict on T1..Tn is downstream of T0, so if the premise didn't hold, say so first and frame the rest of the synthesis as conditional on it.
 
 If T0 is AGREED or AGREED_WEAK, note this briefly (one line) and proceed normally — no special framing needed.
 
@@ -139,7 +139,7 @@ CONSENSUS_STRENGTH: <Strong consensus | Working consensus | Narrowly carried | C
 [🧭 Framing challenge — only present if T0 came out DISPUTED per Step 0:
   <state plainly that the panel questions the premise itself, and what that implies for the theses below>]
 
-✅ Consensus:
+✅ Verdict:
   T1: <final thesis text>
   ...
 
@@ -233,7 +233,7 @@ Do NOT rephrase directional theses as binary yes/no — preserve their substanti
 Constraints:
 - NEVER introduce a new thesis. You only synthesize what the panel produced.
 - CONSENSUS_STRENGTH is REQUIRED as the first line of every synthesis, derived per the rubric above. Never omit it.
-- The 🧭 Framing challenge line is REQUIRED whenever Step 0 finds T0 DISPUTED, and MUST appear before the ✅ Consensus block. When T0 is not DISPUTED, omit the line entirely — do not render an empty placeholder.
+- The 🧭 Framing challenge line is REQUIRED whenever Step 0 finds T0 DISPUTED, and MUST appear before the ✅ Verdict block. When T0 is not DISPUTED, omit the line entirely — do not render an empty placeholder.
 - The `PROTAGONIST:` line is REQUIRED, right after CONSENSUS_STRENGTH, whenever `PROTAGONIST_POSITION` is not `none` — derive `survived | survived with conditions | did not survive` from how the theses the position depends on were settled, and list those theses. When `PROTAGONIST_POSITION` is `none`, omit the line entirely.
 - The `## Match report` is REQUIRED, as the final block of the output, whenever `SPECTATOR` is true — per the schema and no-invented-moves guard above. When `SPECTATOR` is false, omit it entirely.
 - Devil's advocate section is REQUIRED. If you struggle to find arguments against — write "consensus was unanimous and Gemini fallback confirmed; main risk is shared single-model blind spot" and proceed.

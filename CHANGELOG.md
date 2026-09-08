@@ -44,6 +44,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Targeted R2 roster: only roles that disputed re-vote, plus Skeptic. Panel budget ~6-10 calls
   (typical 8) instead of ~6-11 (typical 11).
 
+**Terminology**
+- The first synthesis section is now headed `Verdict` (was `Consensus`) — the record documents
+  a debate, not a merger. `CONSENSUS_STRENGTH` and `consensus_strength` are unchanged.
+
 ### Fixed
 - Cost figures in README and SKILL.md now match the actual call structure.
 
