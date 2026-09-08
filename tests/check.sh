@@ -58,6 +58,14 @@ must SKILL.md 'PROTAGONIST: survived \| survived with conditions \| did not surv
 must SKILL.md '## Match report'
 must_not SKILL.md 'dispatch the same roster IN PARALLEL \(single message, as in Step 4\) with the R2 prompt'
 
+# --- TASK 7 ---
+must SKILL.md '^ *tiers: '
+must SKILL.md '^ *protagonist: '
+must SKILL.md '^ *r2_participants: '
+must_not SKILL.md 'One apex model everywhere'
+must SKILL.md 'One model family, tiers per role'
+must SKILL.md 'Protagonist: <survived'
+
 # --- END ---
 [ $fail -eq 0 ] && echo "ALL CHECKS PASS"
 exit $fail

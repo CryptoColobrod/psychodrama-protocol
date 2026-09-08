@@ -831,7 +831,8 @@ sensor (REFRAME_CLUSTER) → figure (🕊) → re-vote pipeline. This path does 
 if triggers (b)/(c) below also fire — 🕊 appears once per run (Protocol · The figures).
 
 **(b)/(c) End-of-run path — evaluated here, after the final Judge synthesis (Step 8) arrives**,
-unless 🕊 already fired via (a) for this run:
+unless 🕊 already fired via (a) for this run (if Step 5 returned `EARLY_FINALIZE: true`, the
+synthesis arrived from Step 5 instead of Step 8 — this check runs on it exactly the same way):
 
 - **(b) any thesis is `STAGNATED`** → summon 🕊 only.
 - **(c) `CONSENSUS_STRENGTH` is `Contested`** → summon BOTH 🕊 and 🔥.
@@ -877,6 +878,7 @@ The template below is shown in English as the reference; render it in the user's
 ```
 🧠 The Psychodrama Protocol
 Consensus strength: <Strong|Working|Narrowly carried|Contested>
+Protagonist: <survived | survived with conditions | did not survive — on theses …>   ← only if PROTAGONIST_POSITION was set
 Panel: <active roster>
 External critic: <triggered (cli)|triggered (manual)|skipped (user_declined)|invalid_output|not_required>
 
@@ -893,6 +895,8 @@ Round 2/2 (disputed only):
   ...
 
 <Judge Phase C output verbatim — sections ✅ Consensus / 🔗 Holism check / 🔀 Trade-offs (value-tensions) / 🚫 Blockers (error-catches) / 📎 Prerequisites (conditions) / ⚠️ Nuances / ❓ Unresolved / 😈 Devil's advocate>
+
+If `SPECTATOR` is true, the Judge's `## Match report` is rendered verbatim after the sections and before the figures.
 
 <if 🕊 fired (Step 9, path a/b/c/d):>
 🕊 Outside the frame (<trigger: REFRAME_CLUSTER|STAGNATED|Contested|--summon>):
@@ -940,6 +944,9 @@ question: <one-line, truncated if needed>
 mode: panel
 panel: <active roster from Protocol · Roster, +Decomposer +Judge>
 consensus_strength: <Strong|Working|Narrowly carried|Contested>
+protagonist: <yes|no>
+r2_participants: <comma-separated roles | none>
+tiers: <role=tier, role=tier, … — the effective tier per agent this run>
 verdict: <one-line summary of the Judge's Phase C consensus>
 key_assumptions:
   - <bulleted, drawn from T0 (Premise Distillation) + any accepted CONDITION premises>
@@ -954,7 +961,7 @@ record_file: ./consensus-runs/YYYY-MM-DD-<slug>.md
 <text from Step 2>
 
 ## Panel
-<active roster from Protocol · Roster, +Decomposer +Judge> — <note which model session ran the panel, e.g. "run on: <model name/id of this session>">
+<active roster from Protocol · Roster, +Decomposer +Judge, + Champion (Protagonist's advocate) if it voted> — <note which model session ran the panel, e.g. "run on: <model name/id of this session>">
 
 ## Votes
 <per-role, verbatim R1 vote lines including CONDITION/FLIP/ANCHOR/[impact] tags and DISAGREEMENT blocks; if R2 ran, include R2 votes per role as well, verbatim>
@@ -964,6 +971,10 @@ record_file: ./consensus-runs/YYYY-MM-DD-<slug>.md
 
 ## Judge synthesis
 <the full Phase C output from Step 8, verbatim>
+
+<if SPECTATOR is true:>
+## Match report
+<the Judge's verbatim Match report section from Step 8>
 
 ## Figures
 <🕊/🔥 verbatim output(s) from Step 9, if any fired; "none" if `figures: none`>
@@ -983,6 +994,7 @@ question: <one-line, truncated if needed>
 mode: duels
 panel: <perspectives from Step 4a as Champion/Critic pairs, +Decomposer +Judge>
 consensus_strength: <Strong|Working|Narrowly carried|Contested>
+tiers: <critic=opus, champion=sonnet | override>
 verdict: <one-line summary of the Judge's verdict>
 key_assumptions:
   - <bulleted, drawn from T0/Canonical Intent + any accepted CONDITION premises from surviving perspectives>
@@ -1046,10 +1058,11 @@ If the flag is absent — skip this step silently.
 
 ## Principles (for the main model reading this skill)
 
-- **One model family everywhere** (see Protocol · Model). Tiers may differ per role; no cross-vendor dialogue by default.
+- **One model family, tiers per role** (see Protocol · Model). Tier lives in agent frontmatter; `--model` overrides for one run.
 - **R1 = isolation.** The entire roster starts in a single message (parallel tool-use), each in a clean context. No cross-talk between roles in R1.
 - **The Judge is a separate subagent.** Not the main model. A clean context for aggregation.
 - **Hard cap: R1 + R2. Never R3** (see Protocol · Rounds & stop conditions).
+- **Targeted R2, one Judge call when nothing is disputed** (see Protocol · Rounds). Cost discipline is a feature.
 - **Don't introduce new theses mid-flight.** Theses are fixed by the Decomposer before R1 and don't change.
 - **Canonical Intent accompanies the panel every round** (see Protocol · Phases) — protection against locally optimizing a thesis in isolation from the task's actual intent.
 </content>
